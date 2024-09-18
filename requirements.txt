@@ -2,11 +2,6 @@ streamlit
 scikit-learn
 requests
 openai
-google-api-python-client
 beautifulsoup4
 python-dotenv
-tiktoken
 numpy
-pandas
-gspread
-plotly
