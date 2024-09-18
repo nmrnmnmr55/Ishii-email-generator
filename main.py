@@ -3,11 +3,9 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import requests
 from openai import OpenAI
-from googleapiclient.discovery import build
 from bs4 import BeautifulSoup
 import os
 import re
-import tiktoken
 from dotenv import load_dotenv
 
 # キーワードとURLのデータベース
@@ -43,8 +41,6 @@ url_database = {
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID")
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 # APIキーの確認
 if not OPENAI_API_KEY:
@@ -53,17 +49,6 @@ if not OPENAI_API_KEY:
 
 # OpenAI クライアントの初期化
 client = OpenAI(api_key=OPENAI_API_KEY)
-
-# トークンカウンターの初期化
-enc = tiktoken.encoding_for_model("gpt-4o-mini")
-
-def count_tokens(text):
-    return len(enc.encode(text))
-
-def calculate_price(input_tokens, output_tokens):
-    input_price = (input_tokens / 1000000) * 0.15
-    output_price = (output_tokens / 1000000) * 0.60
-    return input_price + output_price
 
 def load_past_emails(file_path):
     try:
@@ -101,40 +86,17 @@ def get_url_content(url):
         st.error(f"Error fetching URL content: {e}")
         return ""
 
-def google_search(query):
-    service = build("customsearch", "v1", developerKey=GOOGLE_API_KEY)
-    res = service.cse().list(q=query, cx=GOOGLE_CSE_ID).execute()
-    return res['items'] if 'items' in res else []
-
-def scrape_search_results(query):
-    search_results = google_search(query)
-    scraped_content = []
-    for item in search_results[:3]:  # 最初の3つの結果のみスクレイピング
-        url = item['link']
-        content = get_url_content(url)
-        scraped_content.append(content)
-    return " ".join(scraped_content)
-
 def generate_gpt4o_response(prompt, system_message="You are a helpful assistant."):
     try:
         messages = [
             {"role": "system", "content": system_message},
             {"role": "user", "content": prompt + "\n\nPlease do not include any greeting, signature, or closing remarks at the beginning or end of your response."}
         ]
-        input_tokens = sum(count_tokens(msg["content"]) for msg in messages)
         
         completion = client.chat.completions.create(
             model="gpt-4o-mini",  # または利用可能な正しいモデル名
             messages=messages
         )
-        
-        output_tokens = count_tokens(completion.choices[0].message.content)
-        price = calculate_price(input_tokens, output_tokens)
-        
-        st.write(f"API Call Stats:")
-        st.write(f"Input tokens: {input_tokens}")
-        st.write(f"Output tokens: {output_tokens}")
-        st.write(f"Estimated price: ${price:.6f}")
         
         return completion.choices[0].message.content
     except Exception as e:
@@ -192,19 +154,13 @@ def main():
         customer_name = extract_customer_name(patient_email)
         matching_keywords = find_matching_keywords(patient_email)
 
-        total_input_tokens = 0
-        total_output_tokens = 0
-        total_price = 0
-
         if matching_keywords:
             responses = []
             st.text("Matching keywords found in the email: " + ", ".join([keyword for keyword, _ in matching_keywords]))
             for keyword, url in matching_keywords:
                 url_content = get_url_content(url)
-                scraped_content = scrape_search_results(keyword)
-                combined_info = f"{url_content}\n\nAdditional information from web search:\n{scraped_content}"
                 response = generate_gpt4o_response(
-                    f"Based on this information about {keyword}: {combined_info}, write a response to: {patient_email}",
+                    f"Based on this information about {keyword}: {url_content}, write a response to: {patient_email}",
                     "You are Dr. Ishii, a professional and caring beauty clinic doctor. Respond to the patient's email based on the given information."
                 )
                 if response:
