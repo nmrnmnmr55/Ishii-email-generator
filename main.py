@@ -2,7 +2,7 @@ import streamlit as st
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import requests
-from openai import OpenAI
+import anthropic
 from bs4 import BeautifulSoup
 import os
 import re
@@ -40,15 +40,15 @@ url_database = {
 # 環境変数の設定
 load_dotenv()
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+CLAUDE_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 # APIキーの確認
-if not OPENAI_API_KEY:
-    st.error("OpenAI API key is not set. Please check your .env file.")
+if not CLAUDE_API_KEY:
+    st.error("Claude API key is not set. Please check your .env file.")
     st.stop()
 
-# OpenAI クライアントの初期化
-client = OpenAI(api_key=OPENAI_API_KEY)
+# Claude クライアントの初期化
+client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
 
 def load_past_emails(file_path):
     try:
@@ -86,19 +86,17 @@ def get_url_content(url):
         st.error(f"Error fetching URL content: {e}")
         return ""
 
-def generate_gpt4o_response(prompt, system_message="You are a helpful assistant."):
+def generate_claude_response(prompt, system_message="You are a helpful assistant."):
     try:
-        messages = [
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": prompt + "\n\nPlease do not include any greeting, signature, or closing remarks at the beginning or end of your response."}
-        ]
-        
-        completion = client.chat.completions.create(
-            model="gpt-4o-mini",  # または利用可能な正しいモデル名
-            messages=messages
+        message = client.messages.create(
+            model="claude-3-5-sonnet-20240620",
+            max_tokens=1000,
+            system=system_message,
+            messages=[
+                {"role": "user", "content": prompt + "\n\nPlease provide a complete and coherent response without any greeting or closing remarks. Start your response with the main content. For better readability, please add appropriate line breaks after each complete thought or every 2-3 sentences."}
+            ]
         )
-        
-        return completion.choices[0].message.content
+        return message.content[0].text
     except Exception as e:
         st.error(f"Error in API call: {str(e)}")
         return None
@@ -120,15 +118,30 @@ def find_matching_keywords(text):
     return matches
 
 def format_response(response, customer_name):
-    # 挨拶、署名、締めくくりの言葉を削除
-    response = re.sub(r'^.*様\s*', '', response, flags=re.DOTALL)  # 冒頭の挨拶を削除
-    response = re.sub(r'\n敬具.*', '', response, flags=re.DOTALL)
-    response = re.sub(r'\nSmart skin CLINIC.*', '', response, flags=re.DOTALL)
+    # 余分な空白や改行を削除
+    response = re.sub(r'\s+', ' ', response).strip()
     
-    formatted_response = f"{customer_name}様\n"
+    # 最初の文章が完全でない場合、削除する
+    first_sentence_end = response.find('。')
+    if first_sentence_end != -1:
+        first_sentence = response[:first_sentence_end+1]
+        if len(first_sentence.split()) < 3:  # 短すぎる文は削除
+            response = response[first_sentence_end+1:].strip()
+    
+    # 適切な位置に改行を挿入
+    sentences = re.split('(。|！|？)', response)
+    formatted_content = ''
+    sentence_count = 0
+    for i in range(0, len(sentences) - 1, 2):
+        formatted_content += sentences[i] + sentences[i+1]
+        sentence_count += 1
+        if sentence_count % 2 == 0:
+            formatted_content += '\n\n'
+    
+    formatted_response = f"{customer_name}様\n\n"
     formatted_response += "平素より大変お世話になっております。\n\n"
-    formatted_response += response.strip() + "\n\n"
-    formatted_response += "引き続き何卒よろしくお願い申し上げます。\n"
+    formatted_response += formatted_content.strip() + "\n\n"
+    formatted_response += "引き続き何卒よろしくお願い申し上げます。\n\n"
     formatted_response += "Smart skin CLINIC\n"
     formatted_response += "院長　石井"
     return formatted_response
@@ -159,27 +172,27 @@ def main():
             st.text("Matching keywords found in the email: " + ", ".join([keyword for keyword, _ in matching_keywords]))
             for keyword, url in matching_keywords:
                 url_content = get_url_content(url)
-                response = generate_gpt4o_response(
+                response = generate_claude_response(
                     f"Based on this information about {keyword}: {url_content}, write a response to: {patient_email}",
-                    "You are Dr. Ishii, a professional and caring beauty clinic doctor. Respond to the patient's email based on the given information."
+                    "You are Dr. Ishii, a professional and caring beauty clinic doctor. Respond to the patient's email based on the given information. Provide a complete and coherent response."
                 )
                 if response:
                     responses.append(response)
             
             combined_response = " ".join(responses)
         else:
-            combined_response = generate_gpt4o_response(
+            combined_response = generate_claude_response(
                 f"Write a response to this patient email: {patient_email}",
-                "You are Dr. Ishii, a professional and caring beauty clinic doctor. Respond to the patient's email in a helpful and informative manner."
+                "You are Dr. Ishii, a professional and caring beauty clinic doctor. Respond to the patient's email in a helpful and informative manner. Provide a complete and coherent response."
             )
 
         if combined_response:
             similar_email_index = find_similar_email(combined_response, vectorizer, tfidf_matrix)
             if similar_email_index is not None and past_emails_list:
                 similar_email = past_emails_list[similar_email_index]
-                final_response = generate_gpt4o_response(
+                final_response = generate_claude_response(
                     f"Rewrite this response in Dr. Ishii's tone and style, based on this example: {similar_email}\n\nResponse to rewrite: {combined_response}",
-                    "You are an AI assistant helping Dr. Ishii maintain consistency in email communications. Rewrite the given response to match Dr. Ishii's tone and style."
+                    "You are an AI assistant helping Dr. Ishii maintain consistency in email communications. Rewrite the given response to match Dr. Ishii's tone and style. Provide a complete and coherent response."
                 )
             else:
                 final_response = combined_response
