@@ -12,17 +12,18 @@ from dotenv import load_dotenv
 url_database = {
     'エクソソーム点滴': 'https://smartskin-clinic.com/menu/injection-infusion/exosome-infusion/',
     'エクソソーム点鼻': 'https://smartskin-clinic.com/menu/exosome-nasalspray/',
-    'NMN点滴': 'https://smartskin-clinic.com/menu/injection-infusion/nmn/',
+    'NMN': 'https://smartskin-clinic.com/menu/injection-infusion/nmn/',
     'ジュベルック and 水光': 'https://smartskin-clinic.com/menu/suikou/juvelook/',
     'エクソソーム and 水光': 'https://smartskin-clinic.com/menu/suikou/exosome/',
-    'キアラレジュ and 水光': 'https://smartskin-clinic.com/menu/suikou/kiarareju/',
+    'キアラレジュ': 'https://smartskin-clinic.com/menu/suikou/kiarareju/',
     'リズネ': 'https://smartskin-clinic.com/menu/injection-infusion/lizne/',
     'ネオファウンド': 'https://smartskin-clinic.com/menu/suikou/neofound/',
     'スキンボト': 'https://smartskin-clinic.com/menu/suikou/skinbotox/',
     'スネコス': 'https://smartskin-clinic.com/menu/injection-infusion/sunekos/',
-    'スネコスパフォルマ': 'https://smartskin-clinic.com/menu/injection-infusion/sunekos-performa/',
-    'スネコスセル': 'https://smartskin-clinic.com/menu/sunekos-cell/',
+    'スネコス and パフォルマ': 'https://smartskin-clinic.com/menu/injection-infusion/sunekos-performa/',
+    'スネコス and セル': 'https://smartskin-clinic.com/menu/sunekos-cell/',
     'プロファイロ': 'https://smartskin-clinic.com/menu/injection-infusion/profhilo/',
+    'プロファイロ and ボディ': 'https://smartskin-clinic.com/menu/profhilo-body/',
     'ジュベルック': 'https://smartskin-clinic.com/menu/injection-infusion/juvelook/',
     'ジュベルックボリューム or レニスナ': 'https://smartskin-clinic.com/menu/juvelookvolume-lenisna/',
     'ゴウリ or GOURI': 'https://smartskin-clinic.com/menu/gouri/',
@@ -34,7 +35,18 @@ url_database = {
     'イソトレ': 'https://smartskin-clinic.com/isotretinoin/',
     'ダーマペン': 'https://smartskin-clinic.com/dermapen-exosome/',
     'ヴェルベット': 'https://smartskin-clinic.com/menu/velvetskin/',
-    'フォト': 'https://smartskin-clinic.com/photofacial/'
+    'フォト or m22 or ステラm22': 'https://smartskin-clinic.com/photofacial/',
+    'プルリアル': 'https://smartskin-clinic.com/menu/pluryal/',
+    'プルリアル and シルク': 'https://smartskin-clinic.com/menu/pluryal/',
+    'プルリアル and ヘアデンシティ': 'https://smartskin-clinic.com/menu/pluryal-hairdensity/',
+    'プルリアル and デンシファイ': 'https://smartskin-clinic.com/menu/pluryal-densify/',
+    'プルリアル and バイオスカルプチャ': 'https://smartskin-clinic.com/menu/pluryal-biosculpture/',
+    'メソセラピー or prpメソセラピー or 毛髪再生': 'https://smartskin-clinic.com/menu/prp-mesotherapy/',
+    'PRP or prp or prp and クマ': 'https://smartskin-clinic.com/menu/prp-kuma/',
+    'prp and おでこ': 'https://smartskin-clinic.com/menu/prp-forehead/',
+    'prp and 手': 'https://smartskin-clinic.com/menu/prp-hand/',
+    'ボライト': 'https://smartskin-clinic.com/menu/volite/',
+    'ボツリヌストキシン or ボツラックス or ボトックス': 'https://smartskin-clinic.com/menu/injection-infusion/#metoxanker'
 }
 
 # 環境変数の設定
